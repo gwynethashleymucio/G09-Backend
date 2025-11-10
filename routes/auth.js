@@ -37,4 +37,4 @@ router.post(
     login
 );
 
-export { router as authRoutes };
+export default router;

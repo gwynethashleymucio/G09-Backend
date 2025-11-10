@@ -1,0 +1,18 @@
+meta {
+  name: New HTTP Request
+  type: http
+  seq: 1
+}
+
+post {
+  url: http://localhost:5000/api/auth/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email":"johndoe@sdca.edu.ph",
+    "password":"password123"
+  }
+}

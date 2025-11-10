@@ -1,33 +1,24 @@
-import express from 'express'
+// routes/user.js
+import express from 'express';
+import { protect } from '../controllers/auth.js';
+import {
+  getUserProfile,
+  updateUserProfile,
+  deleteUserAccount
+} from '../controllers/user.js';
 
-import { register } from '../controllers/user.js'
+const router = express.Router();
 
-const router = express.Router()
+// Protect all routes after this middleware
+router.use(protect);
 
-router.post('/register', async(req, res) => {
-    const isAdded = await register(req.body)
-    res.json({ isAdded })
-})
+// GET /api/users/me - Get current user's profile
+router.get('/me', getUserProfile);
 
-router.get('/:id', (req, res) => {
-    res.json({ message: 'Pending GET /user implementation.' })
-})
+// PUT /api/users/me - Update current user's profile
+router.put('/me', updateUserProfile);
 
-router.put('/:id', (req, res) => {
-    res.json({ message: 'Pending PUT /user implementation.' })
-})
-
-router.delete('/:id', (res, req) =>{
-    res.json({ message: 'Pending DELETE /user implementation.' })
-});
-
-router.post('/login', async (req, res) => {
-  try {
-    const result = await login(req.body)
-    res.status(200).json({ success: true, ...result })
-  } catch (err) {
-    res.status(400).json({ success: false, message: err.message })
-  }
-});
+// DELETE /api/users/me - Delete current user's account
+router.delete('/me', deleteUserAccount);
 
 export { router as userRoutes };
