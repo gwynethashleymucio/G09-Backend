@@ -27,7 +27,7 @@ app.use((req, res, next) => {
 });
 
 // Test route - moved before other route handlers
-app.get('/api/test', (req, res) => {
+app.get('', (req, res) => {
     console.log('Test route hit!');
     res.json({ message: "API is working!" });
 });
