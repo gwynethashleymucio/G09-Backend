@@ -1,6 +1,7 @@
 // models/user.js
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 
 const userSchema = new mongoose.Schema({
     firstName: {
@@ -51,8 +52,46 @@ userSchema.pre('save', async function (next) {
 });
 
 // Method to check password
-userSchema.methods.correctPassword = async function (candidatePassword, userPassword) {
-    return await bcrypt.compare(candidatePassword, userPassword);
+userSchema.methods.correctPassword = async function (candidatePassword) {
+    return await bcrypt.compare(candidatePassword, this.password);
+};
+
+// Check if password was changed after token was issued
+userSchema.methods.changedPasswordAfter = function(JWTTimestamp) {
+    if (this.passwordChangedAt) {
+        const changedTimestamp = parseInt(this.passwordChangedAt.getTime() / 1000, 10);
+        return JWTTimestamp < changedTimestamp;
+    }
+    // False means NOT changed
+    return false;
+};
+
+// Generate password reset token
+userSchema.methods.createPasswordResetToken = function() {
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    
+    this.passwordResetToken = crypto
+        .createHash('sha256')
+        .update(resetToken)
+        .digest('hex');
+    
+    this.passwordResetExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
+    
+    return resetToken;
+};
+
+// Generate email verification token
+userSchema.methods.createEmailVerificationToken = function() {
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    
+    this.emailVerificationToken = crypto
+        .createHash('sha256')
+        .update(verificationToken)
+        .digest('hex');
+    
+    this.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+    
+    return verificationToken;
 };
 
 export const UserModel = mongoose.model('User', userSchema);
