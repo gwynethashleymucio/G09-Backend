@@ -1,8 +1,9 @@
 import { StatusCodes } from 'http-status-codes';
-import { MenuModel } from '../models/Menu.js';
-import { OrderModel } from '../models/Order.js';
+import { MenuItem } from '../models/Menu.js';
+import { Order } from '../models/Order.js';
 import natural from 'natural';
-import { UserModel } from './user.js';
+import { UserModel as User } from '../models/User.js';
+import mongoose from 'mongoose';
 
 const tokenizer = new natural.WordTokenizer();
 const TfIdf = natural.TfIdf;
@@ -14,9 +15,7 @@ let menuItems = [];
 // Function to train the chatbot with menu items
 const trainChatbot = async () => {
     try {
-        menuItems = await MenuModel.find({ isAvailable: true });
-        
-        // Add menu items to TF-IDF for better matching
+        menuItems = await MenuItem.find({ isAvailable: true });
         menuItems.forEach(item => {
             tfidf.addDocument(`${item.name} ${item.category} ${item.description || ''}`.toLowerCase());
         });
@@ -29,8 +28,22 @@ const trainChatbot = async () => {
 export const processOrder = async (req, res, next) => {
     try {
         const { message, userId } = req.body;
-        const user = await UserModel.findById(userId);
-        
+
+        if (!message || !userId) {
+            return res.status(StatusCodes.BAD_REQUEST).json({
+                status: 'error',
+                message: 'Message and userId are required'
+            });
+        }
+
+        if (!mongoose.Types.ObjectId.isValid(userId)) {
+            return res.status(StatusCodes.BAD_REQUEST).json({
+                status: 'error',
+                message: 'Invalid userId format'
+            });
+        }
+
+        const user = await User.findById(userId);
         if (!user) {
             return res.status(StatusCodes.NOT_FOUND).json({
                 status: 'error',
@@ -38,12 +51,14 @@ export const processOrder = async (req, res, next) => {
             });
         }
 
-        // Simple NLP to extract quantity and item
-        const tokens = tokenizer.tokenize(message.toLowerCase());
+        // Extract quantity from message
         let quantity = 1;
         const quantityMatch = message.match(/\d+/);
         if (quantityMatch) {
             quantity = parseInt(quantityMatch[0], 10);
+            if (isNaN(quantity) || quantity < 1) {
+                quantity = 1;
+            }
         }
 
         // Find menu item using TF-IDF
@@ -57,9 +72,6 @@ export const processOrder = async (req, res, next) => {
             }
         });
 
-        // Sort by best match
-        matches.sort((a, b) => b.score - a.score);
-        
         if (matches.length === 0) {
             return res.status(StatusCodes.BAD_REQUEST).json({
                 status: 'error',
@@ -68,23 +80,25 @@ export const processOrder = async (req, res, next) => {
         }
 
         const bestMatch = matches[0].item;
-        
+        const totalAmount = bestMatch.price * quantity;
+
         // Create new order
-        const newOrder = await OrderModel.create({
+        const newOrder = await Order.create({
             user: userId,
             items: [{
                 menuItem: bestMatch._id,
+                name: bestMatch.name,
                 quantity,
                 price: bestMatch.price
             }],
-            totalAmount: bestMatch.price * quantity,
+            totalAmount,
             status: 'pending',
             orderNumber: `ORD-${Date.now()}`,
-            paymentMethod: 'cash', // Default payment method
+            paymentMethod: 'cash',
             paymentStatus: 'pending'
         });
 
-        res.status(StatusCodes.CREATED).json({
+        return res.status(StatusCodes.CREATED).json({
             status: 'success',
             message: `Got it! ${quantity} order${quantity > 1 ? 's' : ''} of ${bestMatch.name} has been added to your cart.`,
             data: {
@@ -93,6 +107,7 @@ export const processOrder = async (req, res, next) => {
         });
 
     } catch (error) {
+        console.error('Error in processOrder:', error);
         next(error);
     }
 };
@@ -101,7 +116,15 @@ export const processOrder = async (req, res, next) => {
 export const getOrderStatus = async (req, res, next) => {
     try {
         const { orderNumber } = req.params;
-        const order = await OrderModel.findOne({ orderNumber })
+
+        if (!orderNumber) {
+            return res.status(StatusCodes.BAD_REQUEST).json({
+                status: 'error',
+                message: 'Order number is required'
+            });
+        }
+
+        const order = await Order.findOne({ orderNumber })
             .populate('user', 'firstName lastName')
             .populate('items.menuItem', 'name price');
 
@@ -112,13 +135,13 @@ export const getOrderStatus = async (req, res, next) => {
             });
         }
 
-        res.status(StatusCodes.OK).json({
+        return res.status(StatusCodes.OK).json({
             status: 'success',
-            data: {
-                order
-            }
+            data: { order }
         });
+
     } catch (error) {
+        console.error('Error in getOrderStatus:', error);
         next(error);
     }
 };

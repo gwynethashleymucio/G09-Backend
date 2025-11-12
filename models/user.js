@@ -94,4 +94,5 @@ userSchema.methods.createEmailVerificationToken = function() {
     return verificationToken;
 };
 
-export const UserModel = mongoose.model('User', userSchema);
+// Check if model exists before compiling it
+export const UserModel = mongoose.models.User || mongoose.model('User', userSchema);

@@ -1,5 +1,5 @@
 import { StatusCodes } from 'http-status-codes';
-import { OrderModel, OrderStatusModel } from '../models/Order.js';
+import { Order as OrderModel } from '../models/Order.js';
 import { NotFoundError, BadRequestError, UnauthorizedError } from '../middleware/errorMiddleware.js';
 
 // @desc    Create new order
@@ -8,7 +8,7 @@ import { NotFoundError, BadRequestError, UnauthorizedError } from '../middleware
 export const createOrder = async (req, res, next) => {
     try {
         const { items, paymentMethod, specialInstructions } = req.body;
-        
+
         // Validate items
         if (!items || !Array.isArray(items) || items.length === 0) {
             throw new BadRequestError('Please add at least one item to the order');
@@ -19,24 +19,23 @@ export const createOrder = async (req, res, next) => {
             return sum + (item.price * item.quantity);
         }, 0);
 
-        // Create order
+        // Create order with initial status history
         const order = await OrderModel.create({
             user: req.user._id,
             items,
             totalAmount,
+            status: 'pending',
             payment: {
                 method: paymentMethod || 'cash',
-                amount: totalAmount
+                amount: totalAmount,
+                status: 'pending'
             },
-            specialInstructions
-        });
-
-        // Record status change
-        await OrderStatusModel.create({
-            order: order._id,
-            status: 'pending',
-            changedBy: req.user._id,
-            notes: 'Order created'
+            specialInstructions,
+            statusHistory: [{
+                status: 'pending',
+                changedBy: req.user._id,
+                notes: 'Order created'
+            }]
         });
 
         // Emit new order event (for real-time updates)
@@ -66,26 +65,26 @@ export const createOrder = async (req, res, next) => {
 export const getAllOrders = async (req, res, next) => {
     try {
         const { status, startDate, endDate, sort = '-createdAt' } = req.query;
-        
+
         // Build query
         const query = {};
-        
+
         // Filter by status
         if (status) {
             query.status = status;
         }
-        
+
         // Filter by date range
         if (startDate || endDate) {
             query.createdAt = {};
             if (startDate) query.createdAt.$gte = new Date(startDate);
             if (endDate) query.createdAt.$lte = new Date(endDate);
         }
-        
+
         const orders = await OrderModel.find(query)
             .populate('user', 'firstName lastName email')
             .sort(sort);
-            
+
         res.status(StatusCodes.OK).json({
             success: true,
             count: orders.length,
@@ -104,7 +103,7 @@ export const getMyOrders = async (req, res, next) => {
         const orders = await OrderModel.find({ user: req.user._id })
             .populate('items.menuItem', 'name price')
             .sort('-createdAt');
-            
+
         res.status(StatusCodes.OK).json({
             success: true,
             count: orders.length,
@@ -124,17 +123,17 @@ export const getOrderById = async (req, res, next) => {
             .populate('user', 'firstName lastName email')
             .populate('items.menuItem', 'name price description')
             .populate('statusHistory.changedBy', 'firstName lastName');
-            
+
         if (!order) {
             throw new NotFoundError('Order not found');
         }
-        
+
         // Check if user is authorized to view this order
-        if (order.user._id.toString() !== req.user._id.toString() && 
+        if (order.user._id.toString() !== req.user._id.toString() &&
             req.user.role !== 'canteen_staff') {
             throw new UnauthorizedError('Not authorized to view this order');
         }
-        
+
         res.status(StatusCodes.OK).json({
             success: true,
             data: order
@@ -150,21 +149,29 @@ export const getOrderById = async (req, res, next) => {
 export const updateOrderStatus = async (req, res, next) => {
     try {
         const { status, notes } = req.body;
-        
+
         if (!status) {
             throw new BadRequestError('Status is required');
         }
-        
+
         const order = await OrderModel.findById(req.params.id);
-        
+
         if (!order) {
             throw new NotFoundError('Order not found');
         }
-        
+
+        // Update order status
         // Update order status
         order.status = status;
+        order.statusHistory = order.statusHistory || [];
+        order.statusHistory.push({
+            status: status,
+            changedBy: req.user._id,
+            changedAt: new Date(),
+            notes: notes || `Status changed to ${status}`
+        });
         await order.save();
-        
+
         // Record status change
         await OrderStatusModel.create({
             order: order._id,
@@ -172,7 +179,7 @@ export const updateOrderStatus = async (req, res, next) => {
             changedBy: req.user._id,
             notes: notes || `Status changed to ${status}`
         });
-        
+
         // Emit status update event
         const io = req.app.get('io');
         if (io) {
@@ -181,7 +188,7 @@ export const updateOrderStatus = async (req, res, next) => {
                 status: order.status,
                 updatedAt: order.updatedAt
             });
-            
+
             if (status === 'prepared') {
                 io.to('staff_room').emit('orderPrepared', {
                     orderId: order._id,
@@ -190,7 +197,7 @@ export const updateOrderStatus = async (req, res, next) => {
                 });
             }
         }
-        
+
         res.status(StatusCodes.OK).json({
             success: true,
             data: order
@@ -206,26 +213,26 @@ export const updateOrderStatus = async (req, res, next) => {
 export const cancelOrder = async (req, res, next) => {
     try {
         const order = await OrderModel.findById(req.params.id);
-        
+
         if (!order) {
             throw new NotFoundError('Order not found');
         }
-        
+
         // Check if user is authorized to cancel this order
-        if (order.user.toString() !== req.user._id.toString() && 
+        if (order.user.toString() !== req.user._id.toString() &&
             req.user.role !== 'canteen_staff') {
             throw new UnauthorizedError('Not authorized to cancel this order');
         }
-        
+
         // Only allow cancellation if order is still pending or preparing
         if (!['pending', 'preparing'].includes(order.status)) {
             throw new BadRequestError(`Cannot cancel order with status: ${order.status}`);
         }
-        
+
         // Update order status to cancelled
         order.status = 'cancelled';
         await order.save();
-        
+
         // Record status change
         await OrderStatusModel.create({
             order: order._id,
@@ -233,7 +240,7 @@ export const cancelOrder = async (req, res, next) => {
             changedBy: req.user._id,
             notes: 'Order cancelled by ' + (req.user.role === 'canteen_staff' ? 'staff' : 'customer')
         });
-        
+
         // Emit cancellation event
         const io = req.app.get('io');
         if (io) {
@@ -243,7 +250,7 @@ export const cancelOrder = async (req, res, next) => {
                 cancelledAt: new Date()
             });
         }
-        
+
         res.status(StatusCodes.OK).json({
             success: true,
             message: 'Order cancelled successfully',
@@ -260,21 +267,21 @@ export const cancelOrder = async (req, res, next) => {
 export const getOrderHistory = async (req, res, next) => {
     try {
         const order = await OrderModel.findById(req.params.id);
-        
+
         if (!order) {
             throw new NotFoundError('Order not found');
         }
-        
+
         // Check if user is authorized to view this order
-        if (order.user.toString() !== req.user._id.toString() && 
+        if (order.user.toString() !== req.user._id.toString() &&
             req.user.role !== 'canteen_staff') {
             throw new UnauthorizedError('Not authorized to view this order history');
         }
-        
+
         const history = await OrderStatusModel.find({ order: order._id })
             .populate('changedBy', 'firstName lastName')
             .sort('-createdAt');
-            
+
         res.status(StatusCodes.OK).json({
             success: true,
             count: history.length,

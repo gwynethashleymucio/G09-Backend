@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { StatusCodes } from 'http-status-codes';
-import { UserModel } from '../models/user.js';
+import { UserModel } from '../models/User.js';
 
 // Error class for authentication errors
 class AuthenticationError extends Error {
@@ -21,10 +21,10 @@ class AuthorizationError extends Error {
 }
 
 // Middleware to protect routes that require authentication
-export const protect = async (req, res, next) => {
+const protect = async (req, res, next) => {
     try {
         let token;
-        
+
         // Get token from Authorization header
         if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
             token = req.headers.authorization.split(' ')[1];
@@ -75,17 +75,16 @@ const restrictTo = (...roles) => {
 };
 
 // Specific role middlewares
-export const isStudent = restrictTo('student');
-export const isFaculty = restrictTo('faculty');
-export const isStaff = restrictTo('canteen_staff');
-
-export const isStaffOrFaculty = restrictTo('canteen_staff', 'faculty');
+const isStudent = restrictTo('student');
+const isFaculty = restrictTo('faculty');
+const isStaff = restrictTo('canteen_staff');
+const isStaffOrFaculty = restrictTo('canteen_staff', 'faculty');
 
 // Error handling middleware
-export const errorHandler = (err, req, res, next) => {
+const errorHandler = (err, req, res, next) => {
     const statusCode = err.statusCode || StatusCodes.INTERNAL_SERVER_ERROR;
     const message = err.message || 'Something went wrong';
-    
+
     res.status(statusCode).json({
         status: 'error',
         message,
@@ -94,9 +93,21 @@ export const errorHandler = (err, req, res, next) => {
 };
 
 // Not found middleware
-export const notFound = (req, res) => {
+const notFound = (req, res) => {
     res.status(StatusCodes.NOT_FOUND).json({
         status: 'error',
         message: `Can't find ${req.originalUrl} on this server!`
     });
+};
+
+// Export all middleware functions
+export {
+    protect,
+    restrictTo,
+    isStudent,
+    isFaculty,
+    isStaff,
+    isStaffOrFaculty,
+    errorHandler,
+    notFound
 };

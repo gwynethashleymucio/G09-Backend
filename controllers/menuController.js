@@ -1,6 +1,6 @@
 import { StatusCodes } from 'http-status-codes';
-import { MenuItem } from './models/Menu.js';
-import { NotFoundError } from '../errors/index.js';
+import { MenuItem } from '../models/Menu.js';
+import { NotFoundError } from '../middleware/errorMiddleware.js';
 
 export const getAllMenuItems = async (req, res) => {
     const menuItems = await MenuItem.find({});

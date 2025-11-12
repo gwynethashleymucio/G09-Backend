@@ -1,6 +1,6 @@
 // socket.js
 import { Server } from 'socket.io';
-import { OrderModel } from './models/Order.js';
+import { Order as OrderModel } from './models/Order.js';
 
 let io;
 

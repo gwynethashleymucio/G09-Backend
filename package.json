@@ -12,6 +12,8 @@
     "mongodb": "^7.0.0",
     "mongoose": "^8.19.2",
     "multer": "^2.0.2",
+    "natural": "^8.1.0",
+    "node-nlp": "^3.10.2",
     "socket.io": "^4.8.1"
   },
   "name": "g09-backend",

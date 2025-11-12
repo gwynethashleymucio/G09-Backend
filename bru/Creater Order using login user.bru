@@ -1,0 +1,38 @@
+meta {
+  name: New HTTP Request
+  type: http
+  seq: 1
+}
+
+post {
+  url: http://localhost:5000/api/orders
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MTIyYWIwZjllNGVjZDQxM2M4NzhlZCIsImlhdCI6MTc2Mjk3MDQxNCwiZXhwIjoxNzY1NTYyNDE0fQ.F6TuoLQinRFGMqW2ofUi_nOYXUMYORMuHuLwVj3VbhQ
+}
+
+body:json {
+  {
+    "items": [
+      {
+        "menuItem": "615a1b9e8c9d8b2a1c7e5d4f",
+        "name": "Chicken Adobo",  // Required
+        "quantity": 2,
+        "price": 75.50,          // Required
+        "specialInstructions": "Less spicy please"
+      }
+    ],
+    "paymentMethod": "cash",
+    "totalAmount": 151.00,       // Should be sum of (price * quantity) for all items
+    "payment": {
+      "method": "cash",
+      "amount": 151.00           // Should match totalAmount
+    },
+    "queueNumber": "Q-001",      // Generate this on the server side
+    "orderNumber": "ORD-001"     // Generate this on the server side
+  }
+}

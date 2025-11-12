@@ -1,6 +1,17 @@
 // models/Order.js
 import mongoose from 'mongoose';
 
+// Function to generate queue number (e.g., Q-1234)
+const generateQueueNumber = () => `Q-${Math.floor(1000 + Math.random() * 9000)}`;
+
+// Function to generate order number (e.g., ORD-20231113-1234)
+const generateOrderNumber = () => {
+    const date = new Date();
+    const dateStr = date.toISOString().split('T')[0].replace(/\D/g, '');
+    const randomNum = Math.floor(1000 + Math.random() * 9000);
+    return `ORD-${dateStr}-${randomNum}`;
+};
+
 const orderItemSchema = new mongoose.Schema({
     menuItem: {
         type: mongoose.Schema.Types.ObjectId,
@@ -30,47 +41,45 @@ const orderSchema = new mongoose.Schema({
         required: [true, 'Order must belong to a user']
     },
     items: [orderItemSchema],
-    status: {
-        type: String,
-        enum: ['pending', 'preparing', 'prepared', 'claimed', 'cancelled'],
-        default: 'pending',
-        required: true
-    },
     totalAmount: {
         type: Number,
         required: [true, 'Total amount is required'],
         min: [0, 'Total amount cannot be negative']
     },
+    status: {
+        type: String,
+        enum: ['pending', 'preparing', 'ready', 'completed', 'cancelled'],
+        default: 'pending'
+    },
     orderNumber: {
         type: String,
         unique: true,
-        required: true
+        index: true
+    },
+    queueNumber: {
+        type: String,
+        index: true
     },
     payment: {
         method: {
             type: String,
-            enum: ['cash', 'gcash', 'card'],
-            required: [true, 'Payment method is required']
+            enum: ['cash', 'gcash', 'paymaya'],
+            default: 'cash'
+        },
+        amount: {
+            type: Number,
+            required: [true, 'Payment amount is required'],
+            min: [0, 'Payment amount cannot be negative']
         },
         status: {
             type: String,
             enum: ['pending', 'paid', 'failed', 'refunded'],
             default: 'pending'
-        },
-        referenceNumber: String,
-        amount: Number,
-        paidAt: Date
-    },
-    queueNumber: {
-        type: String,
-        required: function() {
-            return this.status !== 'cancelled';
         }
     },
     specialInstructions: {
         type: String,
-        trim: true,
-        maxlength: [500, 'Special instructions cannot be longer than 500 characters']
+        trim: true
     }
 }, {
     timestamps: true,
@@ -78,62 +87,27 @@ const orderSchema = new mongoose.Schema({
     toObject: { virtuals: true }
 });
 
-// Generate order number
-orderSchema.pre('save', async function(next) {
+// Pre-save middleware to generate order and queue numbers
+orderSchema.pre('save', function (next) {
     if (!this.orderNumber) {
-        const count = await this.constructor.countDocuments();
-        this.orderNumber = `ORD-${(count + 1).toString().padStart(5, '0')}`;
+        this.orderNumber = generateOrderNumber();
     }
-    
-    // Generate queue number if not set
-    if (!this.queueNumber && this.status !== 'cancelled') {
-        const today = new Date();
-        const dateStr = `${today.getFullYear()}${(today.getMonth() + 1).toString().padStart(2, '0')}${today.getDate().toString().padStart(2, '0')}`;
-        const count = await this.constructor.countDocuments({
-            createdAt: {
-                $gte: new Date(today.setHours(0, 0, 0, 0)),
-                $lt: new Date(today.setHours(23, 59, 59, 999))
-            }
-        });
-        this.queueNumber = `Q-${dateStr}-${(count + 1).toString().padStart(3, '0')}`;
+    if (!this.queueNumber) {
+        this.queueNumber = generateQueueNumber();
     }
     next();
 });
 
-// Virtual for order status history
-orderSchema.virtual('statusHistory', {
-    ref: 'OrderStatus',
-    localField: '_id',
-    foreignField: 'order'
+// Calculate total amount before saving
+orderSchema.pre('save', function (next) {
+    if (this.isModified('items')) {
+        this.totalAmount = this.items.reduce((sum, item) => {
+            return sum + (item.price * item.quantity);
+        }, 0);
+        this.payment.amount = this.totalAmount;
+    }
+    next();
 });
 
-// Indexes for better query performance
-orderSchema.index({ user: 1 });
-orderSchema.index({ status: 1 });
-orderSchema.index({ orderNumber: 1 }, { unique: true });
-orderSchema.index({ 'payment.status': 1 });
-orderSchema.index({ createdAt: -1 });
-
-export const OrderModel = mongoose.model('Order', orderSchema);
-
-// Separate collection for order status history
-const orderStatusSchema = new mongoose.Schema({
-    order: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Order',
-        required: true
-    },
-    status: {
-        type: String,
-        required: true,
-        enum: ['pending', 'preparing', 'prepared', 'claimed', 'cancelled']
-    },
-    changedBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
-    },
-    notes: String
-}, { timestamps: true });
-
-export const OrderStatusModel = mongoose.model('OrderStatus', orderStatusSchema);
+const Order = mongoose.model('Order', orderSchema);
+export { Order };
