@@ -1,0 +1,23 @@
+meta {
+  name: New HTTP Request
+  type: http
+  seq: 1
+}
+
+get {
+  url: http://localhost:5000/api/menu
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MTIyYWIwZjllNGVjZDQxM2M4NzhlZCIsImlhdCI6MTc2MzAyNjM2NywiZXhwIjoxNzY1NjE4MzY3fQ.uTfjaCd_JE4zbKgIi-7qFG8oSZC4pxruEi1PYzmgzI0
+}
+
+body:json {
+  {
+    "email":"johndoe@sdca.edu.ph",
+    "password":"password123"
+  }
+}

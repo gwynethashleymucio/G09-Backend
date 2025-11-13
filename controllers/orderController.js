@@ -121,16 +121,37 @@ export const getOrderById = async (req, res, next) => {
     try {
         const order = await OrderModel.findById(req.params.id)
             .populate('user', 'firstName lastName email')
-            .populate('items.menuItem', 'name price description')
-            .populate('statusHistory.changedBy', 'firstName lastName');
+            .populate({
+                path: 'items.menuItem',
+                model: 'MenuItem',
+                select: 'name price description'
+            })
+            .populate({
+                path: 'statusHistory.changedBy',
+                model: 'User',
+                select: 'firstName lastName'
+            });
 
         if (!order) {
             throw new NotFoundError('Order not found');
         }
 
+        // Debug: Log user object and order user
+        console.log('Current user:', {
+            _id: req.user._id,
+            role: req.user.role || req.user.userType, // Check both possible properties
+            email: req.user.email
+        });
+        console.log('Order user ID:', order.user._id);
+
         // Check if user is authorized to view this order
-        if (order.user._id.toString() !== req.user._id.toString() &&
-            req.user.role !== 'canteen_staff') {
+        // Allow access if user is the order owner OR is canteen staff
+        const isOrderOwner = order.user._id.toString() === req.user._id.toString();
+        const isStaff = (req.user.role === 'canteen_staff' || req.user.userType === 'canteen_staff');
+
+        console.log('Auth check:', { isOrderOwner, isStaff });
+
+        if (!isOrderOwner && !isStaff) {
             throw new UnauthorizedError('Not authorized to view this order');
         }
 
@@ -172,13 +193,8 @@ export const updateOrderStatus = async (req, res, next) => {
         });
         await order.save();
 
-        // Record status change
-        await OrderStatusModel.create({
-            order: order._id,
-            status,
-            changedBy: req.user._id,
-            notes: notes || `Status changed to ${status}`
-        });
+        // Status change is already recorded in the order's statusHistory array
+        // No need for separate OrderStatusModel
 
         // Emit status update event
         const io = req.app.get('io');

@@ -33,7 +33,7 @@ router.route('/:id/history')
 
 // Single order operations
 router.route('/:id')
-    .get(getOrderById)
+    .get(isStaff, getOrderById)
     .delete(cancelOrder);
 
 // Create new order (available to students and faculty)

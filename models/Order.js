@@ -15,7 +15,7 @@ const generateOrderNumber = () => {
 const orderItemSchema = new mongoose.Schema({
     menuItem: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Menu',
+        ref: 'MenuItem',
         required: [true, 'Order must belong to a menu item']
     },
     name: {
@@ -32,6 +32,24 @@ const orderItemSchema = new mongoose.Schema({
         required: [true, 'Price is required'],
         min: [0, 'Price cannot be negative']
     }
+}, { _id: false });
+
+const statusHistorySchema = new mongoose.Schema({
+    status: {
+        type: String,
+        enum: ['pending', 'preparing', 'ready', 'completed', 'cancelled'],
+        required: true
+    },
+    changedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+    },
+    changedAt: {
+        type: Date,
+        default: Date.now
+    },
+    notes: String
 }, { _id: false });
 
 const orderSchema = new mongoose.Schema({
@@ -80,7 +98,8 @@ const orderSchema = new mongoose.Schema({
     specialInstructions: {
         type: String,
         trim: true
-    }
+    },
+    statusHistory: [statusHistorySchema]
 }, {
     timestamps: true,
     toJSON: { virtuals: true },

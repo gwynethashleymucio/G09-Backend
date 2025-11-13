@@ -1,0 +1,29 @@
+meta {
+  name: New HTTP Request
+  type: http
+  seq: 1
+}
+
+get {
+  url: http://localhost:5000/api/orders/my-orders
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MTIyYWIwZjllNGVjZDQxM2M4NzhlZCIsImlhdCI6MTc2MzAzMDI3NiwiZXhwIjoxNzY1NjIyMjc2fQ.cU31dEjmcQWqbHuoxoqBwF26YpPJwNM6J5d_OFtb_SA
+}
+
+body:json {
+  {
+    "email":"johndoe@sdca.edu.ph",
+    "password":"password123"
+  }
+}
+
+tests {
+  {
+    
+  }
+}
