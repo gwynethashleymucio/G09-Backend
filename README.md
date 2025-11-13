@@ -81,9 +81,100 @@
 #### `catchAsync.js`
 **Purpose**: Wrapper for async/await error handling.
 
+## 🚀 API Documentation
+
+### Authentication
+
+| Method | Endpoint | Description | Authentication | Request Body |
+|--------|----------|-------------|----------------|--------------|
+| POST   | `/api/auth/register` | Register a new user | None | `{ firstName, lastName, email, password, userType }` |
+| POST   | `/api/auth/login` | User login | None | `{ email, password }` |
+
+### Users
+*All user routes require authentication*
+
+| Method | Endpoint | Description | Roles |
+|--------|----------|-------------|-------|
+| GET    | `/api/users/me` | Get current user's profile | All |
+| PUT    | `/api/users/me` | Update current user's profile | All |
+| DELETE | `/api/users/me` | Delete current user's account | All |
+
+### Menu
+
+| Method | Endpoint | Description | Authentication |
+|--------|----------|-------------|----------------|
+| GET    | `/api/menu` | Get all menu items | Public |
+| POST   | `/api/menu` | Add new menu item | Canteen Staff |
+
+### Orders
+
+| Method | Endpoint | Description | Roles |
+|--------|----------|-------------|-------|
+| POST   | `/api/orders` | Create new order | Student, Faculty |
+| GET    | `/api/orders` | Get all orders | Canteen Staff |
+| GET    | `/api/orders/my-orders` | Get current user's orders | All |
+| GET    | `/api/orders/:id` | Get order by ID | Owner or Staff |
+| PATCH  | `/api/orders/:id/status` | Update order status | Canteen Staff |
+| GET    | `/api/orders/:id/history` | Get order history | Owner or Staff |
+| DELETE | `/api/orders/:id` | Cancel order | Owner |
+
+### Chatbot
+*All chatbot routes require authentication*
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST   | `/api/chatbot/process-order` | Process natural language order |
+| GET    | `/api/chatbot/order-status/:orderNumber` | Get order status |
+| GET    | `/api/chatbot/debug/menu-items` | Debug endpoint for menu items |
+
 ## 🛠️ Setup Instructions
 
 1. **Clone the repository**
    ```bash
-   git clone [https://github.com/yourusername/G09-Backend.git](https://github.com/yourusername/G09-Backend.git)
+   git clone https://github.com/yourusername/G09-Backend.git
    cd G09-Backend
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Environment Setup**
+   Create a `.env` file in the root directory with the following variables:
+   ```
+   PORT=5000
+   MONGODB_URI=your_mongodb_connection_string
+   JWT_SECRET=your_jwt_secret
+   JWT_EXPIRES_IN=90d
+   ```
+
+4. **Start the server**
+   ```bash
+   npm start
+   ```
+
+## 🔐 Authentication
+
+Include the JWT token in the `Authorization` header for protected routes:
+```
+Authorization: Bearer your.jwt.token.here
+```
+
+## 📝 Notes
+
+- All dates are returned in ISO 8601 format (UTC)
+- Error responses follow the format: `{ success: false, message: 'Error message' }`
+- Successful responses include a `success: true` flag
+- Pagination is available on list endpoints using `page` and `limit` query parameters
+
+## 🏗️ Project Structure
+
+```
+G09-Backend/
+├── controllers/     # Route controllers
+├── models/         # Database models
+├── routes/         # Route definitions
+├── middleware/     # Custom middleware
+├── config/         # Configuration files
+└── utils/          # Utility functions
