@@ -1,0 +1,24 @@
+meta {
+  name: New HTTP Request
+  type: http
+  seq: 1
+}
+
+post {
+  url: http://localhost:5000/api/chatbot/process-order
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MTIyYWIwZjllNGVjZDQxM2M4NzhlZCIsImlhdCI6MTc2MzAzNzUzMSwiZXhwIjoxNzY1NjI5NTMxfQ.VSkOdYrOg3G3eChlvGzhlbHiV7N_rgvAKzHBAw6ugdQ
+}
+
+body:json {
+  {
+      "message": "checkout",
+      "userId": "69122ab0f9e4ecd413c878eds",
+      "sessionId": "onv-1763040887773"
+  }
+}
