@@ -14,7 +14,7 @@ import { orderRoutes } from './routes/orderRoutes.js';
 import authRoutes from './routes/auth.js';
 import { menuRoutes } from './routes/menuRoutes.js';
 import { userRoutes } from './routes/user.js';
-
+import paymentRoutes from './routes/paymentRoutes.js';
 // Import error handlers (only once)
 
 
@@ -57,6 +57,7 @@ app.use('/api/menu', menuRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/chatbot', chatbotRoutes);
+app.use('/api/payments', paymentRoutes);
 
 // 404 handler - must be after all other routes
 app.use(notFound);

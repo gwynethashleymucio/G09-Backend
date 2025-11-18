@@ -1,0 +1,27 @@
+meta {
+  name: New HTTP Request
+  type: http
+  seq: 1
+}
+
+post {
+  url: http://localhost:5000/api/menu
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MTVhYjdhNTQxNWQyNDhkNjM4NDNhMyIsImlhdCI6MTc2MzQ1MTM0OSwiZXhwIjoxNzY2MDQzMzQ5fQ.ZVMjS_XhfLNi5X6-oVeP3K3rF4j06Q2_KEz-Vg_Nu-o
+}
+
+body:json {
+  {
+    "name": "Tinolang Manok (Chicken Soup)",         // required, string
+    "description": "Chicken, ginger, green papaya/chayote, malunggay (moringa) leaves.", // optional, string
+    "price": 100.00,              // required, number (non-negative)
+    "category": "main",          // required, must be one of: 'main', 'beverage', 'snack', 'dessert'
+    "imageUrl": "image.jpg",     // optional, defaults to 'default.jpg'
+    "isAvailable": true          // optional, boolean, defaults to true
+  }
+}

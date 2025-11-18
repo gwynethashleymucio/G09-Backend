@@ -249,13 +249,13 @@ export const cancelOrder = async (req, res, next) => {
         order.status = 'cancelled';
         await order.save();
 
-        // Record status change
-        await OrderStatusModel.create({
-            order: order._id,
+        // Record status change in order's statusHistory
+        order.statusHistory.push({
             status: 'cancelled',
             changedBy: req.user._id,
             notes: 'Order cancelled by ' + (req.user.role === 'canteen_staff' ? 'staff' : 'customer')
         });
+        await order.save();
 
         // Emit cancellation event
         const io = req.app.get('io');

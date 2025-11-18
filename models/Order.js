@@ -37,7 +37,7 @@ const orderItemSchema = new mongoose.Schema({
 const statusHistorySchema = new mongoose.Schema({
     status: {
         type: String,
-        enum: ['pending', 'preparing', 'ready', 'completed', 'cancelled'],
+        enum: ['pending', 'preparing', 'ready', 'completed', 'cancelled', 'paid'],
         required: true
     },
     changedBy: {
@@ -66,7 +66,7 @@ const orderSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['pending', 'preparing', 'ready', 'completed', 'cancelled'],
+        enum: ['pending', 'preparing', 'ready', 'completed', 'cancelled', 'paid'],
         default: 'pending'
     },
     orderNumber: {
