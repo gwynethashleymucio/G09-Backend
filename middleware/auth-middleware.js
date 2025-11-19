@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { StatusCodes } from 'http-status-codes';
-import { UserModel } from '../models/User.js';
+import { UserModel } from '../models/user.js';
 
 // Error class for authentication errors
 class AuthenticationError extends Error {

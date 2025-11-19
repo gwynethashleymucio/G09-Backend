@@ -1,5 +1,5 @@
 // controllers/user.js
-import { UserModel } from '../models/User.js';
+import { UserModel } from '../models/user.js';
 import { StatusCodes } from 'http-status-codes';
 
 // Get current user's profile

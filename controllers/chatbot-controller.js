@@ -4,7 +4,7 @@ const { Types: { ObjectId } } = mongoose;
 import { Menu } from '../models/Menu.js';
 import { Order } from '../models/Order.js';
 import natural from 'natural';
-import { UserModel as User } from '../models/User.js';
+import { UserModel as User } from '../models/user.js';
 
 // Initialize mongoose ObjectId for validation
 
