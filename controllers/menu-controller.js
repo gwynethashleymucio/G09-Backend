@@ -1,13 +1,13 @@
 import { StatusCodes } from 'http-status-codes';
-import { MenuItem } from '../models/Menu.js';
-import { NotFoundError } from '../middleware/errorMiddleware.js';
+import { Menu } from '../models/Menu.js';
+import { NotFoundError } from '../middleware/error-middleware.js';
 
 export const getAllMenuItems = async (req, res) => {
-    const menuItems = await MenuItem.find({});
+    const menuItems = await Menu.find({});
     res.status(StatusCodes.OK).json({ success: true, data: menuItems });
 };
 
 export const createMenuItem = async (req, res) => {
-    const menuItem = await MenuItem.create(req.body);
+    const menuItem = await Menu.create(req.body);
     res.status(StatusCodes.CREATED).json({ success: true, data: menuItem });
 };

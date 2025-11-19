@@ -2,8 +2,8 @@ import express from 'express';
 import {
     getAllMenuItems,
     createMenuItem
-} from '../controllers/menuController.js';
-import { protect, restrictTo } from '../middleware/authMiddleware.js';
+} from '../controllers/menu-controller.js';
+import { protect, restrictTo } from '../middleware/auth-middleware.js';
 
 const router = express.Router();
 

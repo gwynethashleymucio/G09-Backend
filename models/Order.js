@@ -13,9 +13,9 @@ const generateOrderNumber = () => {
 };
 
 const orderItemSchema = new mongoose.Schema({
-    menuItem: {
+    menu: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'MenuItem',
+        ref: 'Menu',
         required: [true, 'Order must belong to a menu item']
     },
     name: {

@@ -7,8 +7,8 @@ import {
     updateOrderStatus,
     cancelOrder,
     getOrderHistory
-} from '../controllers/orderController.js';
-import { protect, isStaff, isStaffOrFaculty } from '../middleware/authMiddleware.js';
+} from '../controllers/order-controller.js';
+import { protect, isStaff, isStaffOrFaculty } from '../middleware/auth-middleware.js';
 
 const router = express.Router();
 

@@ -1,13 +1,13 @@
 import express from 'express';
-import { 
-    createPayment, 
-    getAllPayments, 
-    getPayment, 
-    updatePaymentStatus, 
-    getMyPayments, 
-    processGCashWebhook 
-} from '../controllers/paymentController.js';
-import { protect, isStaff } from '../middleware/authMiddleware.js';
+import {
+    createPayment,
+    getAllPayments,
+    getPayment,
+    updatePaymentStatus,
+    getMyPayments,
+    processGCashWebhook
+} from '../controllers/payment-controller.js';
+import { protect, isStaff } from '../middleware/auth-middleware.js';
 
 const router = express.Router();
 

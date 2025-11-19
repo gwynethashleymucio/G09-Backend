@@ -1,6 +1,6 @@
 import { StatusCodes } from 'http-status-codes';
 import { Order as OrderModel } from '../models/Order.js';
-import { NotFoundError, BadRequestError, UnauthorizedError } from '../middleware/errorMiddleware.js';
+import { NotFoundError, BadRequestError, UnauthorizedError } from '../middleware/error-middleware.js';
 
 // @desc    Create new order
 // @route   POST /api/orders
@@ -101,7 +101,7 @@ export const getAllOrders = async (req, res, next) => {
 export const getMyOrders = async (req, res, next) => {
     try {
         const orders = await OrderModel.find({ user: req.user._id })
-            .populate('items.menuItem', 'name price')
+            .populate('items.menu', 'name price')
             .sort('-createdAt');
 
         res.status(StatusCodes.OK).json({
@@ -122,8 +122,8 @@ export const getOrderById = async (req, res, next) => {
         const order = await OrderModel.findById(req.params.id)
             .populate('user', 'firstName lastName email')
             .populate({
-                path: 'items.menuItem',
-                model: 'MenuItem',
+                path: 'items.menu',
+                model: 'Menu',
                 select: 'name price description'
             })
             .populate({

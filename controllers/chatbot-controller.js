@@ -1,7 +1,7 @@
 import { StatusCodes } from 'http-status-codes';
 import mongoose from 'mongoose';
 const { Types: { ObjectId } } = mongoose;
-import { MenuItem } from '../models/Menu.js';
+import { Menu } from '../models/Menu.js';
 import { Order } from '../models/Order.js';
 import natural from 'natural';
 import { UserModel as User } from '../models/User.js';
@@ -38,7 +38,7 @@ const trainingData = [
 const trainChatbot = async () => {
     try {
         // Train with menu items
-        menuItems = await MenuItem.find({ isAvailable: true });
+        menuItems = await Menu.find({ isAvailable: true });
         menuItems.forEach(item => {
             tfidf.addDocument(`${item.name} ${item.category} ${item.description || ''}`.toLowerCase());
         });
@@ -73,7 +73,7 @@ const detectIntent = async (message) => {
         const mentionedItem = orderMatch[1].trim();
         if (mentionedItem) {
             // First check database for exact match
-            const dbItem = await MenuItem.findOne({
+            const dbItem = await Menu.findOne({
                 name: { $regex: new RegExp(`^${mentionedItem}$`, 'i') },
                 isAvailable: true
             });
@@ -94,7 +94,7 @@ const detectIntent = async (message) => {
             }
 
             // If no exact match, try fuzzy search
-            const allMenuItems = await MenuItem.find({ isAvailable: true });
+            const allMenuItems = await Menu.find({ isAvailable: true });
             const matches = [];
 
             allMenuItems.forEach(item => {
@@ -255,7 +255,7 @@ export const processOrder = async (req, res, next) => {
         const userId = req.user?._id; // Get user ID from authenticated session
 
         // Debug log
-        console.log('Processing message:', {
+        req.logger?.info('Chatbot intent detected', {
             message,
             userId,
             sessionId,
@@ -309,7 +309,7 @@ export const processOrder = async (req, res, next) => {
 
                     // Add to existing order items
                     conversation.orderItems.push({
-                        menuItem: bestMatch._id,
+                        menu: bestMatch._id,
                         name: bestMatch.name,
                         quantity,
                         price: bestMatch.price
@@ -357,16 +357,17 @@ export const processOrder = async (req, res, next) => {
                 if (mentionedItem && itemId) {
                     // Add to order items
                     const existingItemIndex = conversation.orderItems.findIndex(
-                        item => item.menuItem.toString() === itemId.toString()
+                        item => item.menu.toString() === itemId.toString()
                     );
 
                     if (existingItemIndex >= 0) {
                         // Update quantity if item already exists
+                        conversation.orderItems[existingItemIndex].menu = itemId;
                         conversation.orderItems[existingItemIndex].quantity += quantity;
                     } else {
                         // Add new item
                         conversation.orderItems.push({
-                            menuItem: itemId,
+                            menu: itemId,
                             name: mentionedItem,
                             quantity: quantity,
                             price: price
@@ -380,7 +381,7 @@ export const processOrder = async (req, res, next) => {
                     response = `I'm sorry, I couldn't find "${mentionedItem}" on our menu.`;
 
                     // Try to suggest similar items
-                    const allItems = await MenuItem.find({ isAvailable: true });
+                    const allItems = await Menu.find({ isAvailable: true });
                     if (allItems.length > 0) {
                         const suggestions = allItems
                             .map(item => item.name)
@@ -456,7 +457,7 @@ export const processOrder = async (req, res, next) => {
                         state: conversation.state
                     });
                 }
-                
+
                 try {
                     // Get authenticated user details
                     const user = await User.findById(userId).select('firstName lastName email').lean();
@@ -480,7 +481,7 @@ export const processOrder = async (req, res, next) => {
 
                     // Prepare order items
                     const orderItems = conversation.orderItems.map(item => ({
-                        menuItem: item.menuItem,
+                        menu: item.menu,
                         name: item.name,
                         quantity: item.quantity,
                         price: item.price
@@ -507,10 +508,10 @@ export const processOrder = async (req, res, next) => {
                         ...orderData,
                         items: orderData.items.map(i => ({
                             ...i,
-                            menuItem: i.menuItem.toString()
+                            menu: i.menu.toString()
                         }))
                     });
-                    
+
                     // Create the order
                     order = await Order.create(orderData);
                     console.log('Order created successfully:', {
@@ -548,12 +549,12 @@ export const processOrder = async (req, res, next) => {
                             ...orderData,
                             items: orderData.items ? orderData.items.map(i => ({
                                 ...i,
-                                menuItem: i.menuItem ? i.menuItem.toString() : 'invalid-menu-item'
+                                menu: i.menu ? i.menu.toString() : 'invalid-menu-item'
                             })) : 'no-items'
                         } : 'No order data was created before error'
                     });
                     response = 'Sorry, there was an error processing your order. Please try again.';
-                    
+
                     // Send error response and return to avoid further processing
                     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
                         status: 'error',
@@ -572,10 +573,10 @@ export const processOrder = async (req, res, next) => {
                     lastMessage: ''
                 };
                 response = 'Your order has been cancelled. How can I help you?';
-                
+
                 // Save the conversation state
                 conversations.set(conversationId, conversation);
-                
+
                 return res.status(StatusCodes.OK).json({
                     status: 'success',
                     message: response,
@@ -642,60 +643,60 @@ export const processOrder = async (req, res, next) => {
     }
 };
 
-    // Get order status
-    export const getOrderStatus = async (req, res, next) => {
-        try {
-            const { orderNumber } = req.params;
+// Get order status
+export const getOrderStatus = async (req, res, next) => {
+    try {
+        const { orderNumber } = req.params;
 
-            if (!orderNumber) {
-                return res.status(StatusCodes.BAD_REQUEST).json({
-                    status: 'error',
-                    message: 'Order number is required'
-                });
-            }
-
-            const order = await Order.findOne({ orderNumber })
-                .populate('user', 'firstName lastName')
-                .populate('items.menuItem', 'name price');
-
-            if (!order) {
-                return res.status(StatusCodes.NOT_FOUND).json({
-                    status: 'error',
-                    message: 'Order not found'
-                });
-            }
-
-            return res.status(StatusCodes.OK).json({
-                status: 'success',
-                data: { order }
+        if (!orderNumber) {
+            return res.status(StatusCodes.BAD_REQUEST).json({
+                status: 'error',
+                message: 'Order number is required'
             });
-
-        } catch (error) {
-            console.error('Error in getOrderStatus:', error);
-            next(error);
         }
-    };
 
-    // Debug endpoint to check available menu items
-    export const debugMenuItems = async (req, res) => {
-        try {
-            const items = await MenuItem.find({});
-            res.status(200).json({
-                status: 'success',
-                count: items.length,
-                items: items.map(item => ({
-                    id: item._id,
-                    name: item.name,
-                    price: item.price,
-                    category: item.category,
-                    isAvailable: item.isAvailable
-                }))
+        const order = await Order.findOne({ orderNumber })
+            .populate('user', 'firstName lastName')
+            .populate('items.menu', 'name price');
+
+        if (!order) {
+            return res.status(StatusCodes.NOT_FOUND).json({
+                status: 'error',
+                message: 'Order not found'
             });
-        } catch (error) {
-            console.error('Error fetching menu items:', error);
-            res.status(500).json({ status: 'error', message: 'Failed to fetch menu items' });
         }
-    };
 
-    // Initialize chatbot
-    trainChatbot().catch(console.error);
+        return res.status(StatusCodes.OK).json({
+            status: 'success',
+            data: { order }
+        });
+
+    } catch (error) {
+        console.error('Error in getOrderStatus:', error);
+        next(error);
+    }
+};
+
+// Debug endpoint to check available menu items
+export const debugMenuItems = async (req, res) => {
+    try {
+        const items = await Menu.find({});
+        res.status(200).json({
+            status: 'success',
+            count: items.length,
+            items: items.map(item => ({
+                id: item._id,
+                name: item.name,
+                price: item.price,
+                category: item.category,
+                isAvailable: item.isAvailable
+            }))
+        });
+    } catch (error) {
+        console.error('Error fetching menu items:', error);
+        res.status(500).json({ status: 'error', message: 'Failed to fetch menu items' });
+    }
+};
+
+// Initialize chatbot
+trainChatbot().catch(console.error);

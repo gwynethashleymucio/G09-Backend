@@ -2,7 +2,7 @@
 import { StatusCodes } from 'http-status-codes';
 import { Payment } from '../models/Payment.js';
 import { Order } from '../models/Order.js';
-import { NotFoundError, BadRequestError, UnauthorizedError } from '../middleware/errorMiddleware.js';
+import { NotFoundError, BadRequestError, UnauthorizedError } from '../middleware/error-middleware.js';
 
 /**
  * @desc    Create a new payment

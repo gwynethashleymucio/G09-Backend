@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 dotenv.config();
-import { errorHandler, notFound } from './middleware/errorMiddleware.js';
+import { errorHandler, notFound } from './middleware/error-middleware.js';
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
@@ -9,12 +9,12 @@ import { createServer } from 'http';
 import { initSocket } from './socket.js';
 
 // Import routes
-import chatbotRoutes from './routes/chatbotRoutes.js';
-import { orderRoutes } from './routes/orderRoutes.js';
+import chatbotRoutes from './routes/chatbot-routes.js';
+import { orderRoutes } from './routes/order-routes.js';
 import authRoutes from './routes/auth.js';
-import { menuRoutes } from './routes/menuRoutes.js';
+import { menuRoutes } from './routes/menu-routes.js';
 import { userRoutes } from './routes/user.js';
-import paymentRoutes from './routes/paymentRoutes.js';
+import paymentRoutes from './routes/payment-routes.js';
 // Import error handlers (only once)
 
 
