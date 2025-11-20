@@ -1,4 +1,4 @@
-// models/Menu.j
+// models/Menu.js
 import mongoose from 'mongoose';
 
 const menuSchema = new mongoose.Schema({
@@ -34,8 +34,8 @@ const menuSchema = new mongoose.Schema({
     },
     createdAt: {
         type: Date,
-        default: Date.now()
+        default: Date.now
     }
 });
 
-export const Menu = mongoose.model('Menu', menuSchema);
+export const Menu = mongoose.model('Menu', menuSchema, 'menu');

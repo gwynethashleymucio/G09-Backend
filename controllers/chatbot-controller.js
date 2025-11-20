@@ -10,7 +10,7 @@ import { UserModel as User } from '../models/user.js';
 
 const tokenizer = new natural.WordTokenizer();
 const TfIdf = natural.TfIdf;
-const tfidf = new TfIdf();
+let tfidf = new TfIdf();
 
 // In-memory store for conversation state
 const conversations = new Map();
@@ -37,6 +37,9 @@ const trainingData = [
 // Function to train the chatbot with menu items and intents
 const trainChatbot = async () => {
     try {
+        // Reset TF-IDF instance to prevent infinite growth and index mismatch
+        tfidf = new TfIdf();
+
         // Train with menu items
         menuItems = await Menu.find({ isAvailable: true });
         menuItems.forEach(item => {
@@ -69,7 +72,6 @@ const detectIntent = async (message) => {
     // 2. Check for order intent
     const orderMatch = message.toLowerCase().match(/(?:i'?d like|i want|can i have|give me|get me|add|i'll have|i will have|let me get|let me have)\s+(?:a|an|the)?\s*([a-zA-Z\s]+)/i);
     if (orderMatch) {
-        console.log('Order match found:', orderMatch[1].trim());
         const mentionedItem = orderMatch[1].trim();
         if (mentionedItem) {
             // First check database for exact match
@@ -142,19 +144,19 @@ const detectIntent = async (message) => {
         }
     }
 
-    // 4. Check for menu requests
-    if (/(show|what'?s|what is|list|see|view).*(menu|items?|food|drinks?|meals?)/i.test(messageLower) ||
-        /(what (do you have|can i order|is available)|menu)/i.test(messageLower)) {
-        return { intent: 'menu' };
-    }
-
-    // 5. Check for price inquiries
+    // 4. Check for price inquiries (Check this BEFORE menu to avoid conflicts)
     const priceMatch = messageLower.match(/(?:how much|what'?s the price|price of|cost of|how much is|how much for)\s*(?:a|an|the)?\s*([a-zA-Z\s]+)/i);
     if (priceMatch) {
         return {
             intent: 'price',
             item: priceMatch[1].trim()
         };
+    }
+
+    // 5. Check for menu requests
+    if (/(show|what'?s|what is|list|see|view).*(menu|items?|food|drinks?|meals?)/i.test(messageLower) ||
+        /(what (do you have|can i order|is available)|\bmenu\b)/i.test(messageLower)) {
+        return { intent: 'menu' };
     }
 
     // 6. Default to unknown intent with suggestions
@@ -277,12 +279,7 @@ export const processOrder = async (req, res, next) => {
             lastMessage: ''
         };
 
-        // Debug log for conversation state
-        console.log('Conversation state:', {
-            state: conversation.state,
-            orderItems: conversation.orderItems,
-            lastMessage: conversation.lastMessage
-        });
+
 
         // Check for add/modify commands first if in confirming state
         if (conversation.state === 'confirming' && /(add|also|and|with|plus|\+)/i.test(message)) {
@@ -294,13 +291,16 @@ export const processOrder = async (req, res, next) => {
                 // Process the addition
                 const matches = [];
                 tfidf.tfidfs(mentionedItem.toLowerCase(), (i, measure) => {
-                    if (measure > 0) {
+                    if (measure > 0 && menuItems[i]) {
                         matches.push({
                             item: menuItems[i],
                             score: measure
                         });
                     }
                 });
+
+                // Sort matches by score to get the best match
+                matches.sort((a, b) => b.score - a.score);
 
                 if (matches.length > 0) {
                     const bestMatch = matches[0].item;
@@ -349,7 +349,6 @@ export const processOrder = async (req, res, next) => {
         let order = null;
 
         // Debug log for detected intent
-        console.log('Detected intent:', JSON.stringify(intentData, null, 2));
 
         // Handle different intents
         switch (intent) {
@@ -402,13 +401,16 @@ export const processOrder = async (req, res, next) => {
                     // Find the item price
                     const matches = [];
                     tfidf.tfidfs(mentionedItem.toLowerCase(), (i, measure) => {
-                        if (measure > 0) {
+                        if (measure > 0 && menuItems[i]) {
                             matches.push({
                                 item: menuItems[i],
                                 score: measure
                             });
                         }
                     });
+
+                    // Sort matches by score to get the best match
+                    matches.sort((a, b) => b.score - a.score);
 
                     if (matches.length > 0) {
                         const bestMatch = matches[0].item;
@@ -440,7 +442,6 @@ export const processOrder = async (req, res, next) => {
             case 'confirm':
                 // User ID should already be validated by the protect middleware
                 if (!userId) {
-                    console.log('No user ID found in session');
                     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
                         status: 'error',
                         message: 'User session error. Please try logging in again.',
@@ -504,22 +505,10 @@ export const processOrder = async (req, res, next) => {
                         user: new ObjectId(userId)  // Set the user reference
                     };
 
-                    console.log('Creating order with data:', {
-                        ...orderData,
-                        items: orderData.items.map(i => ({
-                            ...i,
-                            menu: i.menu.toString()
-                        }))
-                    });
+
 
                     // Create the order
                     order = await Order.create(orderData);
-                    console.log('Order created successfully:', {
-                        id: order._id,
-                        orderNumber: order.orderNumber,
-                        status: order.status,
-                        total: order.totalAmount
-                    });
 
                     // Format order summary
                     const orderSummary = conversation.orderItems

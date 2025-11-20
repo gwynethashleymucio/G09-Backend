@@ -136,20 +136,8 @@ export const getOrderById = async (req, res, next) => {
             throw new NotFoundError('Order not found');
         }
 
-        // Debug: Log user object and order user
-        console.log('Current user:', {
-            _id: req.user._id,
-            role: req.user.role || req.user.userType, // Check both possible properties
-            email: req.user.email
-        });
-        console.log('Order user ID:', order.user._id);
-
-        // Check if user is authorized to view this order
-        // Allow access if user is the order owner OR is canteen staff
         const isOrderOwner = order.user._id.toString() === req.user._id.toString();
         const isStaff = (req.user.role === 'canteen_staff' || req.user.userType === 'canteen_staff');
-
-        console.log('Auth check:', { isOrderOwner, isStaff });
 
         if (!isOrderOwner && !isStaff) {
             throw new UnauthorizedError('Not authorized to view this order');
@@ -294,9 +282,8 @@ export const getOrderHistory = async (req, res, next) => {
             throw new UnauthorizedError('Not authorized to view this order history');
         }
 
-        const history = await OrderStatusModel.find({ order: order._id })
-            .populate('changedBy', 'firstName lastName')
-            .sort('-createdAt');
+        // Return the status history from the order document
+        const history = order.statusHistory.sort((a, b) => b.changedAt - a.changedAt);
 
         res.status(StatusCodes.OK).json({
             success: true,
