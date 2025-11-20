@@ -12,6 +12,11 @@ const tokenizer = new natural.WordTokenizer();
 const TfIdf = natural.TfIdf;
 let tfidf = new TfIdf();
 
+// Helper to escape regex special characters
+const escapeRegExp = (string) => {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+};
+
 // In-memory store for conversation state
 const conversations = new Map();
 
@@ -70,13 +75,13 @@ const detectIntent = async (message) => {
     }
 
     // 2. Check for order intent
-    const orderMatch = message.toLowerCase().match(/(?:i'?d like|i want|can i have|give me|get me|add|i'll have|i will have|let me get|let me have)\s+(?:a|an|the)?\s*([a-zA-Z\s]+)/i);
+    const orderMatch = message.toLowerCase().match(/(?:i'?d like|i want|can i have|give me|get me|add|i'll have|i will have|let me get|let me have)\s+(?:\d+\s+)?(?:a|an|the)?\s*([a-zA-Z0-9\s]+)/i);
     if (orderMatch) {
         const mentionedItem = orderMatch[1].trim();
         if (mentionedItem) {
             // First check database for exact match
             const dbItem = await Menu.findOne({
-                name: { $regex: new RegExp(`^${mentionedItem}$`, 'i') },
+                name: { $regex: new RegExp(`^${escapeRegExp(mentionedItem)}$`, 'i') },
                 isAvailable: true
             });
 
@@ -104,7 +109,7 @@ const detectIntent = async (message) => {
                 const itemWords = itemName.split(/\s+/);
                 const matchedWords = itemWords.filter(word =>
                     word.length > 3 &&
-                    new RegExp(`\\b${word}\\b`, 'i').test(mentionedItem)
+                    new RegExp(`\\b${escapeRegExp(word)}\\b`, 'i').test(mentionedItem)
                 );
 
                 if (matchedWords.length > 0) {
@@ -145,7 +150,7 @@ const detectIntent = async (message) => {
     }
 
     // 4. Check for price inquiries (Check this BEFORE menu to avoid conflicts)
-    const priceMatch = messageLower.match(/(?:how much|what'?s the price|price of|cost of|how much is|how much for)\s*(?:a|an|the)?\s*([a-zA-Z\s]+)/i);
+    const priceMatch = messageLower.match(/(?:how much|what'?s the price|price of|cost of|how much is|how much for)\s*(?:\d+\s+)?(?:a|an|the)?\s*([a-zA-Z0-9\s]+)/i);
     if (priceMatch) {
         return {
             intent: 'price',
@@ -180,7 +185,7 @@ const findMentionedItems = (message, items) => {
         const itemWords = itemName.split(/\s+/);
 
         // Check for exact match (whole word)
-        const exactMatch = new RegExp(`\\b${itemName}\\b`, 'i').test(message);
+        const exactMatch = new RegExp(`\\b${escapeRegExp(itemName)}\\b`, 'i').test(message);
         if (exactMatch) {
             mentioned.push({
                 ...item.toObject(),
@@ -193,7 +198,7 @@ const findMentionedItems = (message, items) => {
         // Check for partial matches (individual words)
         const matchedWords = itemWords.filter(word =>
             word.length > 3 &&
-            new RegExp(`\\b${word}\\b`, 'i').test(message)
+            new RegExp(`\\b${escapeRegExp(word)}\\b`, 'i').test(message)
         );
 
         if (matchedWords.length > 0) {
@@ -279,12 +284,15 @@ export const processOrder = async (req, res, next) => {
             lastMessage: ''
         };
 
+        let response = '';
+        let order = null;
+
 
 
         // Check for add/modify commands first if in confirming state
-        if (conversation.state === 'confirming' && /(add|also|and|with|plus|\+)/i.test(message)) {
+        if (conversation.state === 'confirming' && /(?:\b(?:add|also|and|with|plus)\b)|(?:\+)/i.test(message)) {
             // Extract items to add (remove command words)
-            const itemsToAdd = message.replace(/(add|also|and|with|plus|\+)/gi, '').trim();
+            const itemsToAdd = message.replace(/(?:\b(?:add|also|and|with|plus)\b)|(?:\+)/gi, '').trim();
             const { intent: addIntent, item: mentionedItem } = detectIntent(itemsToAdd);
 
             if (addIntent === 'order' && mentionedItem) {
@@ -345,8 +353,6 @@ export const processOrder = async (req, res, next) => {
         // Detect intent for normal flow
         const intentData = await detectIntent(message);
         const { intent, item: mentionedItem, quantity = 1, itemId, price } = intentData;
-        let response = '';
-        let order = null;
 
         // Debug log for detected intent
 
