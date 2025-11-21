@@ -1,6 +1,6 @@
 // routes/user.js
 import express from 'express';
-import { protect } from '../controllers/auth.js';
+import { protect } from '../controllers/auth-controller.js';
 import {
   getUserProfile,
   updateUserProfile,

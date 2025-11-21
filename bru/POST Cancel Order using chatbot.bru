@@ -1,0 +1,25 @@
+meta {
+  name: New HTTP Request
+  type: http
+  seq: 1
+}
+
+post {
+  url: http://localhost:5000/api/chatbot/process-order
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MTIyYWIwZjllNGVjZDQxM2M4NzhlZCIsImlhdCI6MTc2MzY5NDQ0MCwiZXhwIjoxNzY2Mjg2NDQwfQ.ozHnTp5lrB5aUnL39SPILRRHqdWTTt4VVBYcLuW1qGc
+}
+
+body:json {
+  {
+    "message":"cancel",
+    "userId":"69122ab0f9e4ecd413c878ed"
+  }
+  
+  // 69122ab0f9e4ecd413c878ed
+}

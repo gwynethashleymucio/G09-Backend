@@ -171,7 +171,14 @@ export const updateOrderStatus = async (req, res, next) => {
 
         // Update order status
         // Update order status
+        // Update order status
         order.status = status;
+
+        // Automatically update payment status if order is completed or paid
+        if ((status === 'completed' || status === 'paid') && order.payment) {
+            order.payment.status = 'paid';
+        }
+
         order.statusHistory = order.statusHistory || [];
         order.statusHistory.push({
             status: status,

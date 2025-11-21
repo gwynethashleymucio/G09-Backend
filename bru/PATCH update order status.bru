@@ -1,0 +1,23 @@
+meta {
+  name: PATCH Update Order Status
+  type: http
+  seq: 1
+}
+
+patch {
+  url: http://localhost:5000/api/orders/6915e818a4bdfc207b4255ea/status
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MTVhYjdhNTQxNWQyNDhkNjM4NDNhMyIsImlhdCI6MTc2MzAzODczOCwiZXhwIjoxNzY1NjMwNzM4fQ.a86HS-c8mbs0C03Jj7e2nDZxKBA53eIE-D5M7amDh70
+}
+
+body:json {
+  {
+    "status": "preparing",
+    "notes": "Order is being prepared"
+  }
+}

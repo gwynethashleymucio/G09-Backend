@@ -1,0 +1,26 @@
+meta {
+  name: New HTTP Request
+  type: http
+  seq: 1
+}
+
+delete {
+  url: http://localhost:5000/api/orders/691fdce677b4fe852b4a7699
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MTIyYWIwZjllNGVjZDQxM2M4NzhlZCIsImlhdCI6MTc2MzY5NTczMSwiZXhwIjoxNzY2Mjg3NzMxfQ.WqeZQms3_dtz2dz8-BdKLQWNZurEiv4MbPl3xh1y75E
+}
+
+body:json {
+  {
+    "message":"checkout",
+    "userId":"69122ab0f9e4ecd413c878ed",
+    "sessionId": "conv-1763695816394"
+  }
+  
+  // 69122ab0f9e4ecd413c878ed
+}

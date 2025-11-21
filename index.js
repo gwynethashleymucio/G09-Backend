@@ -11,9 +11,9 @@ import { initSocket } from './socket.js';
 // Import routes
 import chatbotRoutes from './routes/chatbot-routes.js';
 import { orderRoutes } from './routes/order-routes.js';
-import authRoutes from './routes/auth.js';
+import authRoutes from './routes/auth-routes.js';
 import { menuRoutes } from './routes/menu-routes.js';
-import { userRoutes } from './routes/user.js';
+import { userRoutes } from './routes/user-routes.js';
 import paymentRoutes from './routes/payment-routes.js';
 // Import error handlers (only once)
 

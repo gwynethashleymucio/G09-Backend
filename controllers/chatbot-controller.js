@@ -69,9 +69,19 @@ const detectIntent = async (message) => {
         return { intent: 'checkout' };
     }
 
+    // 0.5 Check for cancellation
+    if (/(^|\s)(cancel|stop|nevermind|forget it|abort)(\s|$)/i.test(messageLower)) {
+        return { intent: 'cancel' };
+    }
+
     // 1. Check for greetings (quick exit if it's just a greeting)
     if (/(^|\s)(hello|hi|hey|greetings?|good\s(morning|afternoon|evening))(\s|$)/i.test(messageLower)) {
         return { intent: 'greeting' };
+    }
+
+    // 1.5 Check for gratitude
+    if (/(^|\s)(thanks|thank you|thx|appreciate it)(\s|$)/i.test(messageLower)) {
+        return { intent: 'thanks' };
     }
 
     // 2. Check for order intent

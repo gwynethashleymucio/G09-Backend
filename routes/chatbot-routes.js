@@ -1,6 +1,6 @@
 import express from 'express';
 import { processOrder, getOrderStatus, debugMenuItems } from '../controllers/chatbot-controller.js';
-import { protect } from '../controllers/auth.js';
+import { protect } from '../controllers/auth-controller.js';
 
 const router = express.Router();
 
