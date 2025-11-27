@@ -37,7 +37,7 @@ const corsOptions = {
     allowedHeaders: ['Content-Type', 'Authorization']
 };
 
-app.use(cors(corsOptions));
+app.use(cors({ origin: '*' }));
 
 // Logging middleware
 app.use((req, res, next) => {
