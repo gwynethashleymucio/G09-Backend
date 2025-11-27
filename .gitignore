@@ -5,7 +5,6 @@
 .env
 
 # Render configuration
- 
 render.yaml
 
 # backend requirements

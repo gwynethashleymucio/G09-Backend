@@ -21,10 +21,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-  "start": "node index.js",
-  "dev": "nodemon index.js",
-  "test": "echo \"Error: no test specified\" && exit 1"
-},
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/gwynethashleymucio/G09-Backend.git"
