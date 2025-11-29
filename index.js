@@ -37,7 +37,24 @@ const corsOptions = {
     allowedHeaders: ['Content-Type', 'Authorization']
 };
 
-app.use(cors({ origin: '*' }));
+app.use(cors({
+    origin: (origin, callback) => {
+        // Allow requests from mobile apps or Postman (no origin)
+        if (!origin) return callback(null, true);
+
+        // Allow ALL localhost ports for development (Flutter Web changes ports)
+        if (origin.startsWith("http://localhost")) {
+            return callback(null, true);
+        }
+
+        // Block other origins
+        return callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 
 // Logging middleware
 app.use((req, res, next) => {
